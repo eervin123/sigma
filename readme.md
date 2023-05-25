@@ -6,3 +6,5 @@ The file [daily_sigma.ipynb](daily_sigma.ipynb) walks through how to set up mult
 It wasn't the purpose of this exercise, but hey, the results are pretty promising. ![Simulation](simulation.png)
 
 The [modeling.ipynb](modeling.ipynb) is also a vectorbt training notebook. I took an example from the documentation and then built on it as well as commented it a bit. Here we make predictions on the direction of the market in the future and calculate a probability of an up or downtrend. Generating the following signal ![heatmap](heatmap.png "Heatmap") then we run a quick backtest on the signals. Looks like the model was pretty good pre-2021 but then went to hell in 2022 and beyond. ![Alt text](image.png)
+
+The new_high_new_low file has some work in there for paramater optimization. 
