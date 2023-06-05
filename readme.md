@@ -3,6 +3,7 @@
 This was an initial notebook that I'm using to learn Vectorbt and share/teach othere.
 
 The file [daily_sigma.ipynb](daily_sigma.ipynb) walks through how to set up multiple standard deviations then create buy and sell signals and backtest a hypothetical portfolio simulation. I was looking for a strategy that would have thousands and thousands of trades so I could filter it down and work with overlapping signals, etc.
+This file uses a hdf5 file with minutely data on BTC. You can download the data file [here](https://drive.google.com/file/d/1QAHe3B_dfIr-xEmOHjnFLDfSA9vGnoYO/view?usp=drive_link). 
 
 It wasn't the purpose of this exercise, but hey, the results are pretty promising. ![Simulation](images/simulation.png)
 
