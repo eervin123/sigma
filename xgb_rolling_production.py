@@ -400,9 +400,7 @@ def cross_validate_and_train(pipeline, X, y, cv_splitter, model_name=""):
         test_pred = pd.Series(test_pred, index=y_test_slice.index)
         test_labels.append(y_test_slice)
         test_preds.append(test_pred)
-        print(
-            f"{model_name} Split {split} R-squared: {r2_score(y_test_slice, test_pred)}"
-        )
+        print(f"{model_name} Split {split} Mean Squared Error: {mean_squared_error(y_test_slice, test_pred)}")
 
     test_labels = pd.concat(test_labels).rename("labels")
     test_preds = pd.concat(test_preds).rename("preds")
