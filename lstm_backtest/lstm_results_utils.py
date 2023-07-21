@@ -23,7 +23,7 @@ def create_empty_results_df() -> pd.DataFrame:
 
 
 
-def store_backtest_results(name: str, pf: vbt.Portfolio, results: List[Dict[str, any]]):
+def store_backtest_results(name: str, pf: vbt.Portfolio, results: List[Dict[str, any]], should_print: bool = False):
   values: Dict[str, any]    = {}
 
   values[BACKTEST_NAME    ]  = name
@@ -33,7 +33,8 @@ def store_backtest_results(name: str, pf: vbt.Portfolio, results: List[Dict[str,
 
   results.append(values)
       
-  _print_one_backtest_results(values)
+  if should_print:
+    _print_one_backtest_results(values)
 
 
 
