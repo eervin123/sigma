@@ -11,4 +11,11 @@ class ActionType(str, Enum):
   LEGACY_CLOSE_SHORT  = "close_short"
   NOOP                = "no_op"
 
-BASELINE_BACKTEST_RESULT_KEY = "baseline_backtest_result"
+LSTM_REVERSAL_EXITS_BACKTEST_RESULT_KEY           = "LSTM_only_reversal_exits"
+LSTM_PREDICTION_WINDOW_EXITS_BACKTEST_RESULT_KEY  = "LSTM_only_prediction_window_exits"
+
+BACKTEST_NAME     = "Name"
+VBT_TOTAL_RETURN  = "Total Return [%]"
+VBT_WIN_RATE      = "Win Rate [%]"
+VBT_TOTAL_TRADES  = "Total Trades"
+

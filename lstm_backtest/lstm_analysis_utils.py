@@ -1,12 +1,16 @@
 import pandas as pd
 import glob
-from typing import Dict, List
+from typing import List
 import numpy as np
+import vectorbtpro as vbt
+
 
 
 def _read_pickle_files(path: str) -> List:
   pickle_files  = glob.glob(path)
   data          = []
+
+  pickle_files.sort()
 
   for pickle_file in pickle_files:
     with open(pickle_file, 'rb') as f:
@@ -27,7 +31,11 @@ def _generate_df(pickle_file_contents: List) -> pd.DataFrame:
     # Create the initial dataframe with 'Time', the prices, and 'recommendations' along with 'prediction_details'
     data_df = pd.DataFrame(item['price_data']['close_time'], columns=['close_time'])
     data_df[['BTCUSDT_Open', 'BTCUSDT_High', 'BTCUSDT_Low', 'BTCUSDT_Close']] = item['price_data'][['open', 'high', 'low', 'close']]
-    data_df['recommendations'] = item['recommendations']
+    
+    try:
+      data_df['recommendations'] = item['recommendations']
+    except Exception as e:
+      print(f"No recommendations found in file {item}")
 
     # Create the dataframe from 'prediction_details'
     predictions_df = pd.DataFrame(item['prediction_details'], columns=['long', 'short', 'indx_hi', 'indx_low', 'action'])
@@ -156,8 +164,8 @@ def calculate_correlation_slopes(df: pd.DataFrame):
 
 
 
-def store_backtest_results(key: str, values: pd.Series, all_results: Dict[str, Dict]):
-  all_results[key] = values.to_dict()
-  print(f"--------{key}--------")
-  print(values)
+
+
+
+
   
