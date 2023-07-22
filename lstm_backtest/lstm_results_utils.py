@@ -1,7 +1,8 @@
 import pandas as pd
 import vectorbtpro as vbt
 from typing import Dict, List
-from lstm_analysis_constants import BACKTEST_NAME, VBT_TOTAL_RETURN, VBT_WIN_RATE, VBT_TOTAL_TRADES
+from lstm_analysis_constants import BACKTEST_NAME, ENTRY_SLOPE_THRESHOLD, SHORT_ENTRY_SLOPE_THRESHOLD, VBT_TOTAL_RETURN, VBT_WIN_RATE, VBT_TOTAL_TRADES
+from prediction_window_slopes import PredictionWindowSlopes
 
 def _print_one_backtest_results(values: Dict):  
   print(f"--------{values[BACKTEST_NAME]}--------")
@@ -23,13 +24,15 @@ def create_empty_results_df() -> pd.DataFrame:
 
 
 
-def store_backtest_results(name: str, pf: vbt.Portfolio, results: List[Dict[str, any]], should_print: bool = False):
+def store_backtest_results(name: str, pf: vbt.Portfolio, results: List[Dict[str, any]], slopes: PredictionWindowSlopes = None, should_print: bool = False):
   values: Dict[str, any]    = {}
 
-  values[BACKTEST_NAME    ]  = name
-  values[VBT_TOTAL_RETURN ]  = pf.total_return * 100.0
-  values[VBT_WIN_RATE     ]  = pf.trades.win_rate * 100.0
-  values[VBT_TOTAL_TRADES ]  = pf.trades.count()
+  values[BACKTEST_NAME              ] = name
+  values[ENTRY_SLOPE_THRESHOLD      ] = slopes.entry_slope_threshold if slopes is not None else None
+  values[SHORT_ENTRY_SLOPE_THRESHOLD] = slopes.short_entry_slope_threshold if slopes is not None else None
+  values[VBT_TOTAL_RETURN           ] = pf.total_return * 100.0
+  values[VBT_WIN_RATE               ] = pf.trades.win_rate * 100.0
+  values[VBT_TOTAL_TRADES           ] = pf.trades.count()
 
   results.append(values)
       

@@ -14,8 +14,10 @@ class ActionType(str, Enum):
 LSTM_REVERSAL_EXITS_BACKTEST_RESULT_KEY           = "LSTM_only_reversal_exits"
 LSTM_PREDICTION_WINDOW_EXITS_BACKTEST_RESULT_KEY  = "LSTM_only_prediction_window_exits"
 
-BACKTEST_NAME     = "Name"
-VBT_TOTAL_RETURN  = "Total Return [%]"
-VBT_WIN_RATE      = "Win Rate [%]"
-VBT_TOTAL_TRADES  = "Total Trades"
+BACKTEST_NAME               = "Name"
+ENTRY_SLOPE_THRESHOLD       = "Entry Slope Threshold"
+SHORT_ENTRY_SLOPE_THRESHOLD = "Short Entry Slope Threshold"
+VBT_TOTAL_RETURN            = "Total Return [%]"
+VBT_WIN_RATE                = "Win Rate [%]"
+VBT_TOTAL_TRADES            = "Total Trades"
 
