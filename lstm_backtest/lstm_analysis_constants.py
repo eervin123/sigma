@@ -11,12 +11,21 @@ class ActionType(str, Enum):
   LEGACY_CLOSE_SHORT  = "close_short"
   NOOP                = "no_op"
 
+
+class EntryType(str, Enum):
+  LONG_ONLY           = "Long only"
+  SHORT_ONLY          = "Short only"
+  LONG_SHORT          = "Long and short"
+
+
 LSTM_REVERSAL_EXITS_BACKTEST_RESULT_KEY           = "LSTM_only_reversal_exits"
 LSTM_PREDICTION_WINDOW_EXITS_BACKTEST_RESULT_KEY  = "LSTM_only_prediction_window_exits"
 
 BACKTEST_NAME               = "Name"
 ENTRY_SLOPE_THRESHOLD       = "Entry Slope Threshold"
 SHORT_ENTRY_SLOPE_THRESHOLD = "Short Entry Slope Threshold"
+LONG_MINUS_SHORT_THRESHOLD  = "Long Minus Short Threshold"
+ENTRY_TYPE                  = "Entry Type"
 VBT_TOTAL_RETURN            = "Total Return [%]"
 VBT_WIN_RATE                = "Win Rate [%]"
 VBT_TOTAL_TRADES            = "Total Trades"
