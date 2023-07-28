@@ -76,6 +76,10 @@ def run_backtest_long_minus_short_entry_type_long_short(df: pd.DataFrame, result
   long_slope_thresholds       = [entry for entry in df["long_slope"].quantile(quantiles)]
   short_slope_thresholds      = [entry for entry in df["short_slope"].quantile(quantiles)]
 
+  # long_minus_short_thresholds =np.arange(df['long_minus_short'].min(), df['long_minus_short'].max(), threshold_increment)
+  # long_slope_thresholds       =np.arange(df["long_slope"].min(), df["long_slope"].max(), threshold_increment)
+  # short_slope_thresholds      =np.arange(df["short_slope"].min(), df["short_slope"].max(), threshold_increment)
+
   for threshold in long_minus_short_thresholds:  
     for long_slope_threshold in long_slope_thresholds:
       for short_slope_threshold in short_slope_thresholds:
