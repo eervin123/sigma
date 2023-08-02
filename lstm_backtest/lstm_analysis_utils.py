@@ -164,6 +164,25 @@ def calculate_correlation_slopes(df: pd.DataFrame):
 
 
 
+def process_pickle_files(path: str, prediction_window: int):
+  df = read_pickle_files_into_df(path)
+
+  add_forward_prices_to_df(df, prediction_window)
+  df = df.copy()  # for large prediction_window size, the copy() call eliminates the fragmented dataframe warning
+
+  generate_fwd_actual_column(df)
+
+  df = generate_df_with_euclidean_distances(df, prediction_window)
+  calculate_slopes(df)
+  calculate_correlation_slopes(df)
+
+  df.index = pd.to_datetime(df["close_time"], utc=True, unit="s")
+
+  return df
+
+
+
+
 
 
 
