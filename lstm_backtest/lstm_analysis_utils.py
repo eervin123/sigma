@@ -70,7 +70,7 @@ def _generate_df(pickle_file_contents: List) -> pd.DataFrame:
 
 
 def read_pickle_files_into_df(path: str) -> pd.DataFrame:
-  data  = _read_pickle_files(path)
+  data  = _read_pickle_files(path + "/*.pkl")
   df    = _generate_df(data)
 
   return df
@@ -164,7 +164,7 @@ def calculate_correlation_slopes(df: pd.DataFrame):
 
 
 
-def process_pickle_files(path: str, prediction_window: int):
+def process_pickle_files(path: str, prediction_window: int) -> pd.DataFrame:
   df = read_pickle_files_into_df(path)
 
   add_forward_prices_to_df(df, prediction_window)

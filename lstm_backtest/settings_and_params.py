@@ -1,7 +1,8 @@
 import re
 
 
-OUTPUT_DIR = "../results/"
+INPUT_DIR   = "../data/"
+OUTPUT_DIR  = "../results/"
 
 
 def extract_prediction_window_size(model_name: str) -> int:
