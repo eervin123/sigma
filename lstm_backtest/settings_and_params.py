@@ -13,6 +13,13 @@ def extract_prediction_window_size(model_name: str) -> int:
     return int(match.group(1))
   else:
     return None
+  
+
+
+def extract_run_id(model_name: str) -> str:
+  parts = model_name.split("_")
+  
+  return parts[0]
 
 
 
