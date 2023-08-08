@@ -1,6 +1,7 @@
 from typing import List, Optional
 import pandas as pd
 from dataclasses import dataclass
+from abc import ABC, abstractmethod
 from settings_and_params import extract_prediction_window_size, extract_run_id
 
 
@@ -11,7 +12,7 @@ class DataFrameInfo:
   prediction_window_size: int
 
 
-class DataFrameMerger:
+class BaseDataFrameMerger(ABC):
   def process(self, csv_list: List[str]) -> Optional[pd.DataFrame]:
     df_info = self._read_all_dataframe_csv_files(csv_list)
 
@@ -21,7 +22,7 @@ class DataFrameMerger:
 
       return merged_df
     else:
-      print("The CSV files have mismatching prediction window sizes, and/or mismatching number of rows.")          
+      print("The CSV files have mismatching prediction window sizes")          
       return None
 
 
@@ -60,9 +61,8 @@ class DataFrameMerger:
   def _validate_dataframes(self, df_list: List[DataFrameInfo]):
     first_entry = df_list[0]
 
-    return all((entry.prediction_window_size == first_entry.prediction_window_size) and
-               (len(entry.df) == len(first_entry.df))
-                for entry in df_list)
+    return all(entry.prediction_window_size == first_entry.prediction_window_size
+               for entry in df_list)
   
 
 
@@ -74,7 +74,7 @@ class DataFrameMerger:
 
       for df_info in df_list[1:]:
         df_info.df.drop(columns=columns_to_drop, inplace=True)
-        merged_df = merged_df.merge(df_info.df, on="close_time")
+        merged_df = merged_df.merge(df_info.df, on="close_time", how=self._get_merge_strategy())
 
     return merged_df
   
@@ -91,3 +91,23 @@ class DataFrameMerger:
     self._calculate_avg_value(df, "long_slope")
     self._calculate_avg_value(df, "short_slope")
     self._calculate_avg_value(df, "long_minus_short")
+
+
+
+  @abstractmethod
+  def _get_merge_strategy(self) -> str:
+    pass
+
+
+
+
+class IntersectionDataFrameMerger(BaseDataFrameMerger):
+  def _get_merge_strategy(self) -> str:
+    return "inner"
+  
+
+
+
+class UnionDataFrameMerger(BaseDataFrameMerger):
+  def _get_merge_strategy(self) -> str:
+    return "outer"
