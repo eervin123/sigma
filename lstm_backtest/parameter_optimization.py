@@ -41,8 +41,8 @@ class DataFrameColNames:
 
   
 class DataFrameFormat(Enum):
-  SINGLE = 1
-  MERGED = 2
+  SINGLE = 1                      # The dataframe was generated using the function process_pickle_files()
+  MERGED = 2                      # The dataframe was generated using one of the concretions of BaseDataFrameMerger
 
 
 DATAFRAME_FORMAT_MAPPING = {
