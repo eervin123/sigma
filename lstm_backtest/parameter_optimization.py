@@ -123,7 +123,7 @@ def create_strategy(df: pd.DataFrame,
 
 
 
-def run_vbt_backtest(df: pd.DataFrame, prediction_window_size: int, dataframe_format: DataFrameFormat):
+def run_vbt_backtest(df: pd.DataFrame, prediction_window_size: int, dataframe_format: DataFrameFormat, output_file_path: str = None):
   # No tp_stop, no sl_stop
   format_mapping  = DATAFRAME_FORMAT_MAPPING.get(dataframe_format)
   strategy        = create_strategy(df, format_mapping.long_minus_short_col_name, format_mapping.long_slope_col_name, format_mapping.short_slope_col_name)
@@ -139,6 +139,9 @@ def run_vbt_backtest(df: pd.DataFrame, prediction_window_size: int, dataframe_fo
       time_delta_format   = 'Rows',
       accumulate          = False,
   )
+
+  if output_file_path is not None:
+    extract_metrics_from_result(multiple_pf, output_file_path)    
 
   return multiple_pf
 #### UNLIMITED MEMORY - End ####
