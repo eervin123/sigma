@@ -130,11 +130,10 @@ def extract_metrics_from_result(portfolios) -> pd.DataFrame:
 
 
 class BaseVbtBackTestProcessor(ABC):
-  def __init__(self, df: pd.DataFrame, prediction_window_size: int, dataframe_format: DataFrameFormat, output_file_path: str = None):
+  def __init__(self, df: pd.DataFrame, prediction_window_size: int, dataframe_format: DataFrameFormat):
     self.df                     = df
     self.prediction_window_size = prediction_window_size
-    self.format_mapping         = DATAFRAME_FORMAT_MAPPING.get(dataframe_format)
-    self.output_file_path       = output_file_path
+    self.format_mapping         = DATAFRAME_FORMAT_MAPPING.get(dataframe_format)    
 
 
 
@@ -162,10 +161,9 @@ class BaseVbtBackTestProcessor(ABC):
         all_stats = curr_stats
       elif curr_stats is not None:
         # concat curr_stats to all_stats
-        all_stats = pd.concat([all_stats, curr_stats], axis=0)
+        all_stats = pd.concat([all_stats, curr_stats], axis=0)    
 
-    if self.output_file_path is not None and all_stats is not None:
-      all_stats.to_csv(self.output_file_path)
+    return all_stats
           
   
 
