@@ -101,7 +101,7 @@ def generate_thresholds(df: pd.DataFrame,
 
 
 
-
+#### UNLIMITED MEMORY - Begin ####
 def create_strategy(df: pd.DataFrame,
                     lms_col_name        : str, 
                     long_slope_col_name : str, 
@@ -141,39 +141,15 @@ def run_vbt_backtest(df: pd.DataFrame, prediction_window_size: int, dataframe_fo
   )
 
   return multiple_pf
+#### UNLIMITED MEMORY - End ####
+
 
   
 
 def extract_metrics_from_result(portfolios, output_file_path: str):
   min_num_trade_filter  = portfolios.trades.count() > MINIMUM_NUM_TRADES
   filtered_pf           = portfolios.loc[:, min_num_trade_filter]
-  
-  # metrics = [
-  #   filtered_pf.total_return,
-  #   filtered_pf.trades.win_rate,
-  #   filtered_pf.sharpe_ratio,
-  #   filtered_pf.sortino_ratio,
-  #   filtered_pf.max_drawdown,
-  #   filtered_pf.trades.profit_factor,
-  #   filtered_pf.trades.direction_long.count(),
-  #   filtered_pf.trades.direction_short.count(),
-  #   filtered_pf.trades.direction_long.pnl.sum(),
-  #   filtered_pf.trades.direction_short.pnl.sum()
-  # ]
-
-  # keys = [
-  #     'total_return',
-  #     'win_rate',
-  #     'sharpe_ratio',
-  #     'sortino_ratio',
-  #     'max_drawdown',
-  #     'profit_factor',
-  #     'long_count',
-  #     'short_count',
-  #     'long_pnl_sum',
-  #     'short_pnl_sum'
-  # ]
-
+    
   metrics_dict = {
     'total_return'    : filtered_pf.total_return,
     'win_rate'        : filtered_pf.trades.win_rate,
