@@ -28,5 +28,9 @@ def generate_excel_output_file_path(model_name: str) -> str:
 
 
 
+def generate_csv_for_excel_output_file_path(model_name: str) -> str:
+  return OUTPUT_DIR + f"{model_name + '_convert_to_excel.csv'}"
+
+
 def generate_dataframe_csv_output_file_path(model_name: str) -> str:
   return OUTPUT_DIR + f"{model_name + '.csv'}"

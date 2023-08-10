@@ -46,8 +46,8 @@ class BaseDataFrameMerger(ABC):
       , 'short_slope'       : f"short_slope_{run_id}"
     }
     df.rename(columns=column_name_change, inplace=True)
-
-    df.set_index("close_time", inplace=True)
+    
+    df.index = pd.to_datetime(df["close_time"], utc=True)
 
     return DataFrameInfo(file_name, df, prediction_window_size)
 
