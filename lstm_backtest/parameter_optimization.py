@@ -1,11 +1,14 @@
 from dataclasses import dataclass
 from enum import Enum
+from typing import List, Tuple
 import pandas as pd
 import vectorbtpro as vbt
 import numpy as np
+from abc import ABC, abstractmethod
 
-DEFAULT_NUM_INCREMENTS            = 10
+DEFAULT_NUM_INCREMENTS            = 30
 MINIMUM_NUM_TRADES                = 100
+LOW_MEM_BACKTEST_CHUNK_SIZE       = 1       # Controls the size of the outer loop
 
 
 # Single RID column names
@@ -77,37 +80,14 @@ def create_indicator():
 
 
 
-def generate_thresholds(df: pd.DataFrame,
-                        lms_col_name        : str,
-                        long_slope_col_name : str,
-                        short_slope_col_name: str):
-  long_slope_min              = df[long_slope_col_name].min()
-  long_slope_max              = df[long_slope_col_name].max()
-  long_slope_increment        = abs(long_slope_max - long_slope_min) / DEFAULT_NUM_INCREMENTS
-
-  short_slope_min             = df[short_slope_col_name].min()
-  short_slope_max             = df[short_slope_col_name].max()
-  short_slope_increment       = abs(short_slope_max - short_slope_min) / DEFAULT_NUM_INCREMENTS
-
-  long_minus_short_min        = df[lms_col_name].min()
-  long_minus_short_max        = df[lms_col_name].max()
-  long_minus_short_increment  = abs(long_minus_short_max - long_minus_short_min) / DEFAULT_NUM_INCREMENTS
-
-  lms_threshold       = np.arange(long_minus_short_min, long_minus_short_max, long_minus_short_increment)
-  long_slope_thresh   = np.arange(long_slope_min, long_slope_max, long_slope_increment)
-  short_slope_thresh  = np.arange(short_slope_min, short_slope_max, short_slope_increment)
-
-  return lms_threshold, long_slope_thresh, short_slope_thresh
-
-
-
-#### UNLIMITED MEMORY - Begin ####
 def create_strategy(df: pd.DataFrame,
+                    lms_thresholds      : np.array,
+                    long_thresholds     : np.array,
+                    short_thresholds    : np.array,
                     lms_col_name        : str, 
                     long_slope_col_name : str, 
                     short_slope_col_name: str): 
-  indicator = create_indicator()  
-  lms_thresholds, long_thresholds, short_thresholds = generate_thresholds(df, lms_col_name, long_slope_col_name, short_slope_col_name)
+  indicator = create_indicator()    
       
   strategy = indicator.run(
       long_minus_short    = df[lms_col_name],
@@ -121,51 +101,115 @@ def create_strategy(df: pd.DataFrame,
 
   return strategy
 
-
-
-def run_vbt_backtest(df: pd.DataFrame, prediction_window_size: int, dataframe_format: DataFrameFormat, output_file_path: str = None):
-  # No tp_stop, no sl_stop
-  format_mapping  = DATAFRAME_FORMAT_MAPPING.get(dataframe_format)
-  strategy        = create_strategy(df, format_mapping.long_minus_short_col_name, format_mapping.long_slope_col_name, format_mapping.short_slope_col_name)
-
-  multiple_pf = vbt.Portfolio.from_signals(
-      close               = df[format_mapping.close_col_name],
-      high                = df[format_mapping.high_col_name],
-      low                 = df[format_mapping.low_col_name],
-      open                = df[format_mapping.open_col_name],
-      entries             = strategy.entries,
-      short_entries       = strategy.short_entries,
-      td_stop             = prediction_window_size,
-      time_delta_format   = 'Rows',
-      accumulate          = False,
-  )
-
-  if output_file_path is not None:
-    extract_metrics_from_result(multiple_pf, output_file_path)    
-
-  return multiple_pf
-#### UNLIMITED MEMORY - End ####
-
-
   
 
-def extract_metrics_from_result(portfolios, output_file_path: str):
-  min_num_trade_filter  = portfolios.trades.count() > MINIMUM_NUM_TRADES
-  filtered_pf           = portfolios.loc[:, min_num_trade_filter]
+def extract_metrics_from_result(portfolios) -> pd.DataFrame:
+  stats_df              = None
+  min_num_trade_filter  = portfolios.trades.count() > MINIMUM_NUM_TRADES    
+
+  if min_num_trade_filter.any():
+    filtered_pf           = portfolios.loc[:, min_num_trade_filter]
     
-  metrics_dict = {
-    'total_return'    : filtered_pf.total_return,
-    'win_rate'        : filtered_pf.trades.win_rate,
-    'sharpe_ratio'    : filtered_pf.sharpe_ratio,
-    'sortino_ratio'   : filtered_pf.sortino_ratio,
-    'max_drawdown'    : filtered_pf.max_drawdown,
-    'profit_factor'   : filtered_pf.trades.profit_factor,
-    'long_count'      : filtered_pf.trades.direction_long.count(),
-    'short_count'     : filtered_pf.trades.direction_short.count(),
-    'long_pnl_sum'    : filtered_pf.trades.direction_long.pnl.sum(),
-    'short_pnl_sum'   : filtered_pf.trades.direction_short.pnl.sum()
-  }
+    metrics_dict = {
+      'total_return'    : filtered_pf.total_return,
+      'win_rate'        : filtered_pf.trades.win_rate,
+      'sharpe_ratio'    : filtered_pf.sharpe_ratio,
+      'sortino_ratio'   : filtered_pf.sortino_ratio,
+      'max_drawdown'    : filtered_pf.max_drawdown,
+      'profit_factor'   : filtered_pf.trades.profit_factor,
+      'long_count'      : filtered_pf.trades.direction_long.count(),
+      'short_count'     : filtered_pf.trades.direction_short.count(),
+      'long_pnl_sum'    : filtered_pf.trades.direction_long.pnl.sum(),
+      'short_pnl_sum'   : filtered_pf.trades.direction_short.pnl.sum()
+    }
 
-  stats_df = pd.concat(list(metrics_dict.values()), axis=1, keys=list(metrics_dict.keys()))
-  stats_df.to_csv(output_file_path)
+    stats_df = pd.concat(list(metrics_dict.values()), axis=1, keys=list(metrics_dict.keys()))
+  
+  return stats_df
 
+
+
+class BaseVbtBackTestProcessor(ABC):
+  def __init__(self, df: pd.DataFrame, prediction_window_size: int, dataframe_format: DataFrameFormat, output_file_path: str = None):
+    self.df                     = df
+    self.prediction_window_size = prediction_window_size
+    self.format_mapping         = DATAFRAME_FORMAT_MAPPING.get(dataframe_format)
+    self.output_file_path       = output_file_path
+
+
+
+  def run_backtest(self):
+    # No tp_stop, no sl_stop
+    all_stats = None
+    loop_thresholds, long_thresholds, short_thresholds = self._generate_thresholds()    
+
+    for index, entry in enumerate(loop_thresholds):
+      strategy            = create_strategy(self.df, entry, long_thresholds, short_thresholds, self.format_mapping.long_minus_short_col_name, self.format_mapping.long_slope_col_name, self.format_mapping.short_slope_col_name)
+      current_portfolios  = vbt.Portfolio.from_signals(
+          close               = self.df[self.format_mapping.close_col_name],
+          high                = self.df[self.format_mapping.high_col_name],
+          low                 = self.df[self.format_mapping.low_col_name],
+          open                = self.df[self.format_mapping.open_col_name],
+          entries             = strategy.entries,
+          short_entries       = strategy.short_entries,
+          td_stop             = self.prediction_window_size,
+          time_delta_format   = 'Rows',
+          accumulate          = False,
+      )
+      curr_stats = extract_metrics_from_result(current_portfolios)    
+
+      if all_stats is None:
+        all_stats = curr_stats
+      elif curr_stats is not None:
+        # concat curr_stats to all_stats
+        all_stats = pd.concat([all_stats, curr_stats], axis=0)
+
+    if self.output_file_path is not None and all_stats is not None:
+      all_stats.to_csv(self.output_file_path)
+          
+  
+
+
+  def _generate_raw_thresholds(self) -> Tuple[np.array, np.array, np.array]:
+    long_slope_min              = self.df[self.format_mapping.long_slope_col_name].min()
+    long_slope_max              = self.df[self.format_mapping.long_slope_col_name].max()    
+
+    short_slope_min             = self.df[self.format_mapping.short_slope_col_name].min()
+    short_slope_max             = self.df[self.format_mapping.short_slope_col_name].max()    
+
+    long_minus_short_min        = self.df[self.format_mapping.long_minus_short_col_name].min()
+    long_minus_short_max        = self.df[self.format_mapping.long_minus_short_col_name].max()    
+
+    lms_threshold       = np.linspace(long_minus_short_min, long_minus_short_max, DEFAULT_NUM_INCREMENTS)
+    long_slope_thresh   = np.linspace(long_slope_min      , long_slope_max      , DEFAULT_NUM_INCREMENTS)
+    short_slope_thresh  = np.linspace(short_slope_min     , short_slope_max     , DEFAULT_NUM_INCREMENTS)
+
+    return lms_threshold, long_slope_thresh, short_slope_thresh
+  
+
+
+  @abstractmethod
+  def _generate_thresholds(self) -> Tuple[List[np.array], np.array, np.array]:
+    pass
+
+
+
+class VbtBackTestProcessorNoMemoryConstraint(BaseVbtBackTestProcessor):
+  def _generate_thresholds(self) -> Tuple[List[np.array], np.array, np.array]:
+    lms_thresholds, long_thresholds, short_thresholds = self._generate_raw_thresholds()
+
+    return [lms_thresholds], long_thresholds, short_thresholds
+  
+
+
+class VbtBackTestProcessorMemoryConstraint(BaseVbtBackTestProcessor):
+  def _generate_thresholds(self) -> Tuple[List[np.array], np.array, np.array]:
+    lms_thresholds, long_thresholds, short_thresholds = self._generate_raw_thresholds()
+
+    return self._split_into_chunks(lms_thresholds, LOW_MEM_BACKTEST_CHUNK_SIZE), long_thresholds, short_thresholds
+  
+
+
+  def _split_into_chunks(self, array: np.array, chunk_size: int) -> List[np.array]:
+    return [array[i:i+chunk_size] for i in range(0, len(array), chunk_size)]
+  
