@@ -1,8 +1,10 @@
 import os
 import pandas as pd
 from lstm_analysis_utils import process_pickle_files
+from parameter_optimization import DataFrameFormat, VbtBackTestProcessorMemoryConstraint
+import vectorbtpro as vbt
 
-from settings_and_params import INPUT_DIR, OUTPUT_DIR, extract_prediction_window_size, generate_dataframe_csv_output_file_path
+from settings_and_params import extract_prediction_window_size, generate_csv_for_excel_output_file_path, generate_dataframe_csv_output_file_path
 
 PICKLE_FILES_INPUT_PREFIX = "RID"
 
@@ -23,7 +25,7 @@ def export_raw_dataframe_to_csv(df: pd.DataFrame, output_file_path: str):
 # output_df.loc[:, "entries"] = entries
 # output_df.loc[:, "short_entries"] = short_entries
 
-
+# Generates all the dataframe CSV files from the given dirs
 def export_all_raw_dataframes_to_csv(input_path: str, output_path: str):  
   with os.scandir(input_path) as entries:
     for entry in entries:
@@ -36,6 +38,34 @@ def export_all_raw_dataframes_to_csv(input_path: str, output_path: str):
           export_raw_dataframe_to_csv(df, output_path + f"/{dataframe_csv_output_file_name}")     
         except Exception as e:
           pass
+
+
+
+# Do the full analysis of each input folder: read, process, run backtests, and export CSV files
+def perform_full_analysis_on_all_input_dirs(input_path: str, output_path: str):  
+  with os.scandir(input_path) as entries:
+    for entry in entries:
+      if entry.is_dir() and PICKLE_FILES_INPUT_PREFIX in entry.name:
+        vbt.settings.wrapping ["freq"]                = "1m"
+        vbt.settings.portfolio['init_cash']           = 10000
+        
+        try:
+          print(f"Performing analysis on {entry.name}....")
+
+          model_name                      = entry.name
+          prediction_window               = extract_prediction_window_size(model_name)
+          csv_for_excel_output_file_name  = generate_csv_for_excel_output_file_path(model_name)
+          dataframe_csv_output_file_name  = generate_dataframe_csv_output_file_path(model_name)
+                    
+          df      = process_pickle_files(entry.path, prediction_window)    
+          result  = VbtBackTestProcessorMemoryConstraint(df, prediction_window, DataFrameFormat.SINGLE).run_backtest()
+
+          if result is not None:
+            result.to_csv(csv_for_excel_output_file_name)
+
+          export_raw_dataframe_to_csv(df, output_path + f"/{dataframe_csv_output_file_name}")     
+        except Exception as e:
+          print("---Failed to analyze")
         
         
 
@@ -43,4 +73,4 @@ def export_all_raw_dataframes_to_csv(input_path: str, output_path: str):
 
 
 if __name__ == '__main__':
-  export_all_raw_dataframes_to_csv("/home/htram/onramp/sigma/data", "/home/htram/onramp/sigma/results")
+  perform_full_analysis_on_all_input_dirs("/home/htram/onramp/sigma/data", "/home/htram/onramp/sigma/results")
