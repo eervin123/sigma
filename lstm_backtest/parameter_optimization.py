@@ -220,7 +220,7 @@ class VbtBackTestProcessorOneLoopMemoryConstraint(VbtBackTestProcessorWithMemory
 
 
 
-class VbtBackTestProcessorTwoLoopMemoryConstraint(VbtBackTestProcessorOneLoopMemoryConstraint):
+class VbtBackTestProcessorTwoLoopsMemoryConstraint(VbtBackTestProcessorOneLoopMemoryConstraint):
   def _generate_thresholds(self) -> Tuple[List[np.array], List[np.array], np.array]:
     lms_thresholds, long_thresholds, short_thresholds = self._generate_raw_thresholds()    
 

@@ -1,7 +1,8 @@
 import os
 import pandas as pd
 from lstm_analysis_utils import process_pickle_files
-from parameter_optimization import DataFrameFormat, VbtBackTestProcessorTwoLoopMemoryConstraint
+from parameter_optimization import DataFrameFormat
+from parameter_optimization_factory import VbtBackTestProcessorType, VbtBackTestProcessorFactory
 import vectorbtpro as vbt
 
 from settings_and_params import extract_prediction_window_size, generate_csv_for_excel_output_file_path, generate_dataframe_csv_output_file_path
@@ -61,13 +62,16 @@ def perform_full_analysis_on_all_input_dirs(input_path: str, output_path: str):
         csv_for_excel_output_file_name  = generate_csv_for_excel_output_file_path(model_name, output_path)
         dataframe_csv_output_file_name  = generate_dataframe_csv_output_file_path(model_name, output_path)
                   
-        df      = process_pickle_files(entry.path, prediction_window)    
-        result  = VbtBackTestProcessorTwoLoopMemoryConstraint(df, prediction_window, DataFrameFormat.SINGLE).run_backtest()
+        df        = process_pickle_files(entry.path, prediction_window)    
+        processor = VbtBackTestProcessorFactory.create(VbtBackTestProcessorType.WITH_MEMORY_CONSTRAINT_TWO_LOOPS, df, prediction_window, DataFrameFormat.SINGLE)
 
-        if result is not None:
-          result.to_csv(csv_for_excel_output_file_name)
+        if processor:
+          result = processor.run_backtests()
 
-        export_raw_dataframe_to_csv(df, dataframe_csv_output_file_name)     
+          if result is not None:
+            result.to_csv(csv_for_excel_output_file_name)
+
+          export_raw_dataframe_to_csv(df, dataframe_csv_output_file_name)     
       except Exception as e:
         print("---Failed to analyze - exception: ", e)
         
