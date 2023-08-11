@@ -6,9 +6,10 @@ import vectorbtpro as vbt
 import numpy as np
 from abc import ABC, abstractmethod
 
-DEFAULT_NUM_INCREMENTS            = 30
-MINIMUM_NUM_TRADES                = 100
-LOW_MEM_BACKTEST_CHUNK_SIZE       = 1       # Controls the size of the outer loop
+DEFAULT_NUM_INCREMENTS              = 30
+MINIMUM_NUM_TRADES                  = 100
+OUTTERMOST_LOOP_BACKTEST_CHUNK_SIZE = 1       # Controls the size of the outer loop
+MIDDLE_LOOP_BACKTEST_CHUNK_SIZE     = 5       # Controls the size of the middle loop
 
 
 # Single RID column names
@@ -140,28 +141,29 @@ class BaseVbtBackTestProcessor(ABC):
   def run_backtest(self):
     # No tp_stop, no sl_stop
     all_stats = None
-    loop_thresholds, long_thresholds, short_thresholds = self._generate_thresholds()    
+    outer_loop_thresholds, middle_loop_thresholds, short_thresholds = self._generate_thresholds()    
 
-    for index, entry in enumerate(loop_thresholds):
-      strategy            = create_strategy(self.df, entry, long_thresholds, short_thresholds, self.format_mapping.long_minus_short_col_name, self.format_mapping.long_slope_col_name, self.format_mapping.short_slope_col_name)
-      current_portfolios  = vbt.Portfolio.from_signals(
-          close               = self.df[self.format_mapping.close_col_name],
-          high                = self.df[self.format_mapping.high_col_name],
-          low                 = self.df[self.format_mapping.low_col_name],
-          open                = self.df[self.format_mapping.open_col_name],
-          entries             = strategy.entries,
-          short_entries       = strategy.short_entries,
-          td_stop             = self.prediction_window_size,
-          time_delta_format   = 'Rows',
-          accumulate          = False,
-      )
-      curr_stats = extract_metrics_from_result(current_portfolios)    
+    for entry in outer_loop_thresholds:
+      for middle_entry in middle_loop_thresholds:
+        strategy            = create_strategy(self.df, entry, middle_entry, short_thresholds, self.format_mapping.long_minus_short_col_name, self.format_mapping.long_slope_col_name, self.format_mapping.short_slope_col_name)
+        current_portfolios  = vbt.Portfolio.from_signals(
+            close               = self.df[self.format_mapping.close_col_name],
+            high                = self.df[self.format_mapping.high_col_name],
+            low                 = self.df[self.format_mapping.low_col_name],
+            open                = self.df[self.format_mapping.open_col_name],
+            entries             = strategy.entries,
+            short_entries       = strategy.short_entries,
+            td_stop             = self.prediction_window_size,
+            time_delta_format   = 'Rows',
+            accumulate          = False,
+        )
+        curr_stats = extract_metrics_from_result(current_portfolios)    
 
-      if all_stats is None:
-        all_stats = curr_stats
-      elif curr_stats is not None:
-        # concat curr_stats to all_stats
-        all_stats = pd.concat([all_stats, curr_stats], axis=0)    
+        if all_stats is None:
+          all_stats = curr_stats
+        elif curr_stats is not None:
+          # concat curr_stats to all_stats
+          all_stats = pd.concat([all_stats, curr_stats], axis=0)    
 
     return all_stats
           
@@ -187,27 +189,40 @@ class BaseVbtBackTestProcessor(ABC):
 
 
   @abstractmethod
-  def _generate_thresholds(self) -> Tuple[List[np.array], np.array, np.array]:
+  def _generate_thresholds(self) -> Tuple[List[np.array], List[np.array], np.array]:
     pass
 
 
 
 class VbtBackTestProcessorNoMemoryConstraint(BaseVbtBackTestProcessor):
-  def _generate_thresholds(self) -> Tuple[List[np.array], np.array, np.array]:
+  def _generate_thresholds(self) -> Tuple[List[np.array], List[np.array], np.array]:
     lms_thresholds, long_thresholds, short_thresholds = self._generate_raw_thresholds()
 
-    return [lms_thresholds], long_thresholds, short_thresholds
+    return [lms_thresholds], [long_thresholds], short_thresholds
   
 
 
-class VbtBackTestProcessorMemoryConstraint(BaseVbtBackTestProcessor):
-  def _generate_thresholds(self) -> Tuple[List[np.array], np.array, np.array]:
-    lms_thresholds, long_thresholds, short_thresholds = self._generate_raw_thresholds()
 
-    return self._split_into_chunks(lms_thresholds, LOW_MEM_BACKTEST_CHUNK_SIZE), long_thresholds, short_thresholds
-  
-
-
+class VbtBackTestProcessorWithMemoryConstraint(BaseVbtBackTestProcessor):  
   def _split_into_chunks(self, array: np.array, chunk_size: int) -> List[np.array]:
     return [array[i:i+chunk_size] for i in range(0, len(array), chunk_size)]
+
+
+
+
+class VbtBackTestProcessorOneLoopMemoryConstraint(VbtBackTestProcessorWithMemoryConstraint):
+  def _generate_thresholds(self) -> Tuple[List[np.array], List[np.array], np.array]:
+    lms_thresholds, long_thresholds, short_thresholds = self._generate_raw_thresholds()
+
+    return self._split_into_chunks(lms_thresholds, OUTTERMOST_LOOP_BACKTEST_CHUNK_SIZE), [long_thresholds], short_thresholds
+    
+  
+
+
+
+class VbtBackTestProcessorTwoLoopMemoryConstraint(VbtBackTestProcessorOneLoopMemoryConstraint):
+  def _generate_thresholds(self) -> Tuple[List[np.array], List[np.array], np.array]:
+    lms_thresholds, long_thresholds, short_thresholds = self._generate_raw_thresholds()    
+
+    return self._split_into_chunks(lms_thresholds, OUTTERMOST_LOOP_BACKTEST_CHUNK_SIZE), self._split_into_chunks(long_thresholds, MIDDLE_LOOP_BACKTEST_CHUNK_SIZE), short_thresholds
   

@@ -1,8 +1,8 @@
 import re
 
 
-INPUT_DIR   = "../data/"
-OUTPUT_DIR  = "../results/"
+INPUT_DIR   = "../data"
+OUTPUT_DIR  = "../results"
 
 
 def extract_prediction_window_size(model_name: str) -> int:
@@ -23,14 +23,14 @@ def extract_run_id(model_name: str) -> str:
 
 
 
-def generate_excel_output_file_path(model_name: str) -> str:
-  return OUTPUT_DIR + f"{model_name + '.xlsx'}"
+def generate_excel_output_file_path(model_name: str, output_dir: str = OUTPUT_DIR) -> str:
+  return output_dir + f"/{model_name + '.xlsx'}"
 
 
 
-def generate_csv_for_excel_output_file_path(model_name: str) -> str:
-  return OUTPUT_DIR + f"{model_name + '_convert_to_excel.csv'}"
+def generate_csv_for_excel_output_file_path(model_name: str, output_dir: str = OUTPUT_DIR) -> str:
+  return output_dir + f"/{model_name + '_convert_to_excel.csv'}"
 
 
-def generate_dataframe_csv_output_file_path(model_name: str) -> str:
-  return OUTPUT_DIR + f"{model_name + '.csv'}"
+def generate_dataframe_csv_output_file_path(model_name: str, output_dir: str = OUTPUT_DIR) -> str:
+  return output_dir + f"/{model_name + '.csv'}"
