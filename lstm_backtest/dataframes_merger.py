@@ -48,6 +48,7 @@ class BaseDataFrameMerger(ABC):
     df.rename(columns=column_name_change, inplace=True)
     
     df.index = pd.to_datetime(df["close_time"], utc=True)
+    df.drop(columns=["close_time"], inplace=True)
 
     return DataFrameInfo(file_name, df, prediction_window_size)
 
