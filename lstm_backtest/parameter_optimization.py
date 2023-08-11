@@ -6,10 +6,11 @@ import vectorbtpro as vbt
 import numpy as np
 from abc import ABC, abstractmethod
 
-DEFAULT_NUM_INCREMENTS              = 30
+
 MINIMUM_NUM_TRADES                  = 100
 OUTTERMOST_LOOP_BACKTEST_CHUNK_SIZE = 1       # Controls the size of the outer loop
 MIDDLE_LOOP_BACKTEST_CHUNK_SIZE     = 5       # Controls the size of the middle loop
+DEFAULT_NUM_INCREMENTS              = 30      # Controls how many slices we generate given range of values
 
 
 # Single RID column names
