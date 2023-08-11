@@ -66,7 +66,7 @@ def perform_full_analysis_on_all_input_dirs(input_path: str, output_path: str):
         processor = VbtBackTestProcessorFactory.create(VbtBackTestProcessorType.WITH_MEMORY_CONSTRAINT_TWO_LOOPS, df, prediction_window, DataFrameFormat.SINGLE)
 
         if processor:
-          result = processor.run_backtests()
+          result = processor.run_backtest()
 
           if result is not None:
             result.to_csv(csv_for_excel_output_file_name)
