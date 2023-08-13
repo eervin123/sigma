@@ -1,4 +1,6 @@
 import re
+import os
+from typing import List, Set, Tuple
 
 
 INPUT_DIR   = "../data"
@@ -16,10 +18,36 @@ def extract_prediction_window_size(model_name: str) -> int:
   
 
 
+def extract_file_name_and_extension(file_path: str) -> Tuple[str, str]:
+  base_name = os.path.basename(file_path)
+
+  return os.path.splitext(base_name)
+
+  
+
+
 def extract_run_id(model_name: str) -> str:
   parts = model_name.split("_")
   
   return parts[0]
+
+
+
+def extract_run_id_from_file_path(file_path: str) -> str:
+  file_name, _ = extract_file_name_and_extension(file_path)
+  return extract_run_id(file_name)
+
+
+
+
+def extract_prediction_window_sizes(group: List[str]) -> Set[int]:
+  return set([extract_prediction_window_size(entry) for entry in group])
+
+
+
+def extract_run_ids(group: List[str]) -> List[str]:
+  return [extract_run_id_from_file_path(file_path) for file_path in group]
+
 
 
 
@@ -34,3 +62,22 @@ def generate_csv_for_excel_output_file_path(model_name: str, output_dir: str = O
 
 def generate_dataframe_csv_output_file_path(model_name: str, output_dir: str = OUTPUT_DIR) -> str:
   return output_dir + f"/{model_name + '.csv'}"
+
+
+
+
+def construct_output_file_name_no_ext(group: List[str]) -> str:
+  run_ids = extract_run_ids(group)
+  run_ids.sort()
+  file_name = "_".join(run_ids)
+
+  return f"{file_name}"
+
+
+
+def generate_multiple_models_backtest_output_file_name_no_ext(group: List[str], method: str) -> str:
+  return f"{construct_output_file_name_no_ext(group)}_{method}"
+
+
+
+  
