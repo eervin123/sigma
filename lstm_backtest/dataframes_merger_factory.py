@@ -1,12 +1,6 @@
-from enum import Enum
 from typing import Optional
 
-from dataframes_merger import BaseDataFrameMerger, IntersectionDataFrameMerger, UnionDataFrameMerger
-
-
-class DataFrameMergerType(Enum):
-  INTERSECTION  = 0
-  UNION         = 1
+from dataframes_merger import BaseDataFrameMerger, DataFrameMergerType, IntersectionDataFrameMerger, UnionDataFrameMerger
 
 
 

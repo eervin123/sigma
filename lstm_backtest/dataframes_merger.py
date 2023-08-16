@@ -1,8 +1,14 @@
+from enum import Enum
 from typing import List, Optional
 import pandas as pd
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from settings_and_params import extract_prediction_window_size, extract_run_id
+
+
+class DataFrameMergerType(Enum):
+  INTERSECTION  = "intersection"
+  UNION         = "union"
 
 
 class DataFrameMergerUtils:
@@ -41,6 +47,11 @@ class BaseDataFrameMerger(ABC):
     else:
       print("The CSV files have mismatching prediction window sizes")          
       return None
+    
+
+  @abstractmethod
+  def get_method_as_string(self) -> str:
+    pass
 
 
 
@@ -119,7 +130,10 @@ class BaseDataFrameMerger(ABC):
 
 
 
-class IntersectionDataFrameMerger(BaseDataFrameMerger):
+class IntersectionDataFrameMerger(BaseDataFrameMerger):  
+  def get_method_as_string(self) -> str:
+    return DataFrameMergerType.INTERSECTION.value
+
   def _get_merge_strategy(self) -> str:
     return "inner"
   
@@ -127,5 +141,8 @@ class IntersectionDataFrameMerger(BaseDataFrameMerger):
 
 
 class UnionDataFrameMerger(BaseDataFrameMerger):
+  def get_method_as_string(self) -> str:
+    return DataFrameMergerType.UNION.value
+  
   def _get_merge_strategy(self) -> str:
     return "outer"

@@ -58,7 +58,7 @@ class AverageMultiModelBacktest(MultiModelBacktest):
   
 
 
-NUM_TOP_COMBINATIONS_TO_SELECT = 10
+NUM_TOP_COMBINATIONS_TO_SELECT = 5
 
 
 
@@ -143,9 +143,10 @@ class MajorityMultiModelBacktest(MultiModelBacktest):
 
   def _extract_thresholds(self, df: pd.DataFrame, model_id: str) -> List[Thresholds]:
     return [Thresholds( model_id         = model_id,
+                        long_minus_short = row['LMSWithSlopes_lms_threshold'],
                         long_slope       = row['LMSWithSlopes_long_slope_thresh'],
-                        short_slope      = row['LMSWithSlopes_short_slope_thresh'],
-                        long_minus_short = row['LMSWithSlopes_lms_threshold'])
+                        short_slope      = row['LMSWithSlopes_short_slope_thresh'])
+                        
             for _, row in df.iterrows()]
   
 
@@ -200,7 +201,25 @@ class MajorityMultiModelBacktest(MultiModelBacktest):
   
 
 
+def run_one_multi_model_backtest_majority_rule(merger: BaseDataFrameMerger, model_names: List[str], combination: List[Thresholds]):
+  model_names.sort()
+  prediction_window_size = extract_prediction_window_sizes(model_names).pop()
+  merged_df = merger.process([get_data_frame_file_path(entry) for entry in model_names])
+  entries, short_entries = calculate_entries_using_majority_rule(merged_df, combination)
 
+  current_portfolio = vbt.Portfolio.from_signals(
+            high              = merged_df[MERGED_HIGH_COL_NAME],
+            low               = merged_df[MERGED_LOW_COL_NAME],
+            open              = merged_df[MERGED_OPEN_COL_NAME],
+            close             = merged_df[MERGED_CLOSE_COL_NAME],
+            entries           = entries, 
+            short_entries     = short_entries,
+            td_stop           = prediction_window_size, 
+            time_delta_format = 'Rows', # Use the row index to calculate the time delta              
+            accumulate        = False,            
+            )
+  
+  return current_portfolio
   
 
 

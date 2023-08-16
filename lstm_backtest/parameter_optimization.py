@@ -45,9 +45,9 @@ class DataFrameColNames:
 @dataclass
 class Thresholds:  
   model_id        : str
-  long_slope      : float
-  short_slope     : float
   long_minus_short: float
+  long_slope      : float
+  short_slope     : float  
 
   
 class DataFrameFormat(Enum):
