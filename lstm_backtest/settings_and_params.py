@@ -3,8 +3,9 @@ import os
 from typing import List, Set, Tuple
 
 
-INPUT_DIR   = "../data"
-OUTPUT_DIR  = "../results"
+INPUT_DIR         = "../data"
+OUTPUT_DIR        = "../results"
+RESULT_CSV_SUFFIX = "_convert_to_excel"
 
 
 def extract_prediction_window_size(model_name: str) -> int:
@@ -57,7 +58,7 @@ def generate_excel_output_file_path(model_name: str, output_dir: str = OUTPUT_DI
 
 
 def generate_csv_for_excel_output_file_path(model_name: str, output_dir: str = OUTPUT_DIR) -> str:
-  return output_dir + f"/{model_name + '_convert_to_excel.csv'}"
+  return output_dir + f"/{model_name + RESULT_CSV_SUFFIX + '.csv'}"
 
 
 def generate_dataframe_csv_output_file_path(model_name: str, output_dir: str = OUTPUT_DIR) -> str:
@@ -81,3 +82,14 @@ def generate_multiple_models_backtest_output_file_name_no_ext(group: List[str], 
 
 
   
+def get_data_frame_file_path(model_name: str) -> str:
+  relative_path = f"{OUTPUT_DIR}/{model_name}" + '.csv'
+
+  return os.path.abspath(relative_path)
+
+
+
+def get_results_file_path(model_name: str) -> str:
+  relative_path = f"{OUTPUT_DIR}/{model_name + RESULT_CSV_SUFFIX }" + '.csv'
+
+  return os.path.abspath(relative_path)

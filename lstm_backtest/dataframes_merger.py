@@ -5,6 +5,23 @@ from abc import ABC, abstractmethod
 from settings_and_params import extract_prediction_window_size, extract_run_id
 
 
+class DataFrameMergerUtils:
+  @staticmethod
+  def get_long_minus_short_col_name(model_id: str) -> str:
+    return f"long_minus_short_{model_id}"
+  
+
+  @staticmethod
+  def get_long_slope_col_name(model_id: str) -> str:
+    return f"long_slope_{model_id}"
+  
+
+  @staticmethod
+  def get_short_slope_col_name(model_id: str) -> str:
+    return f"short_slope_{model_id}"
+
+
+
 @dataclass
 class DataFrameInfo:
   name                  : str
@@ -41,9 +58,9 @@ class BaseDataFrameMerger(ABC):
       , 'BTCUSDT_High'      : "high"
       , 'BTCUSDT_Low'       : "low"
       , 'BTCUSDT_Close'     : "close"
-      , 'long_minus_short'  : f"long_minus_short_{run_id}"
-      , 'long_slope'        : f"long_slope_{run_id}"
-      , 'short_slope'       : f"short_slope_{run_id}"
+      , 'long_minus_short'  : DataFrameMergerUtils.get_long_minus_short_col_name(run_id)
+      , 'long_slope'        : DataFrameMergerUtils.get_long_slope_col_name(run_id)
+      , 'short_slope'       : DataFrameMergerUtils.get_short_slope_col_name(run_id)
     }
     df.rename(columns=column_name_change, inplace=True)
     
