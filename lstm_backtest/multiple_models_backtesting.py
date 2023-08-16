@@ -7,7 +7,7 @@ import vectorbtpro as vbt
 from typing import Dict, List, Optional, Tuple
 from dataframes_merger import BaseDataFrameMerger, DataFrameMergerUtils
 from settings_and_params import extract_prediction_window_sizes, extract_run_id, get_data_frame_file_path, get_results_file_path
-from parameter_optimization import MERGED_CLOSE_COL_NAME, MERGED_HIGH_COL_NAME, MERGED_LOW_COL_NAME, MERGED_OPEN_COL_NAME, DataFrameFormat, extract_metrics_from_result
+from parameter_optimization import MERGED_CLOSE_COL_NAME, MERGED_HIGH_COL_NAME, MERGED_LOW_COL_NAME, MERGED_OPEN_COL_NAME, DataFrameFormat, Thresholds, extract_metrics_from_single_result, generate_index_list
 from parameter_optimization_factory import VbtBackTestProcessorFactory, VbtBackTestProcessorType
 
 
@@ -61,12 +61,7 @@ class AverageMultiModelBacktest(MultiModelBacktest):
 NUM_TOP_COMBINATIONS_TO_SELECT = 10
 
 
-@dataclass
-class Thresholds:  
-  model_id        : str
-  long_slope      : float
-  short_slope     : float
-  long_minus_short: float
+
 
 
 def calculate_majority_count(num_cols: int) -> int:  
@@ -175,7 +170,7 @@ class MajorityMultiModelBacktest(MultiModelBacktest):
       num_entries = (entries == True).sum() + (short_entries == True).sum()
 
       if num_entries > 100:    
-        current_portfolios = vbt.Portfolio.from_signals(
+        current_portfolio = vbt.Portfolio.from_signals(
             high              = merged_df[MERGED_HIGH_COL_NAME],
             low               = merged_df[MERGED_LOW_COL_NAME],
             open              = merged_df[MERGED_OPEN_COL_NAME],
@@ -187,14 +182,19 @@ class MajorityMultiModelBacktest(MultiModelBacktest):
             accumulate        = False,            
             )    
         
-        curr_stats = extract_metrics_from_result(current_portfolios)    
+        curr_stats = extract_metrics_from_single_result(combination, current_portfolio)    
 
         if all_stats is None:
           all_stats = curr_stats
         elif curr_stats is not None:
           # concat curr_stats to all_stats
-          all_stats = pd.concat([all_stats, curr_stats], axis=0)
+          all_stats = pd.concat([all_stats, curr_stats], ignore_index=True)
     
+    if all_stats is not None:
+      index_list_of_lists = [generate_index_list(entry.model_id) for entry in combinations[0]]
+      flattened_list = [item for sublist in index_list_of_lists for item in sublist]
+      all_stats.set_index(flattened_list, inplace=True)
+
     return all_stats
   
   

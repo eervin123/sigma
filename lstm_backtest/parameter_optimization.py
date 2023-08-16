@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Tuple
+from typing import Dict, List, Optional, Tuple
 import pandas as pd
 import vectorbtpro as vbt
 import numpy as np
@@ -41,6 +41,14 @@ class DataFrameColNames:
   long_slope_col_name       : str
   short_slope_col_name      : str
 
+
+@dataclass
+class Thresholds:  
+  model_id        : str
+  long_slope      : float
+  short_slope     : float
+  long_minus_short: float
+
   
 class DataFrameFormat(Enum):
   SINGLE = 1                      # The dataframe was generated using the function process_pickle_files()
@@ -51,6 +59,22 @@ DATAFRAME_FORMAT_MAPPING = {
   DataFrameFormat.SINGLE: DataFrameColNames(SINGLE_CLOSE_COL_NAME, SINGLE_HIGH_COL_NAME, SINGLE_LOW_COL_NAME, SINGLE_OPEN_COL_NAME, SINGLE_LONG_MINUS_SHORT_COL_NAME, SINGLE_LONG_SLOPE_COL_NAME, SINGLE_SHORT_SLOPE_COL_NAME),
   DataFrameFormat.MERGED: DataFrameColNames(MERGED_CLOSE_COL_NAME, MERGED_HIGH_COL_NAME, MERGED_LOW_COL_NAME, MERGED_OPEN_COL_NAME, MERGED_LONG_MINUS_SHORT_COL_NAME, MERGED_LONG_SLOPE_COL_NAME, MERGED_SHORT_SLOPE_COL_NAME)
 }
+
+
+def map_thresholds_to_dict(thresholds: Thresholds) -> Dict:
+  return {       
+    f'LMSWithSlopes_lms_threshold_{thresholds.model_id}'      : thresholds.long_minus_short,
+    f'LMSWithSlopes_long_slope_thresh_{thresholds.model_id}'  : thresholds.long_slope, 
+    f'LMSWithSlopes_short_slope_thresh_{thresholds.model_id}' : thresholds.short_slope,
+  }
+
+
+def generate_index_list(model_id: str) -> List[str]:
+  return [  f'LMSWithSlopes_lms_threshold_{model_id}' 
+          , f'LMSWithSlopes_long_slope_thresh_{model_id}'
+          , f'LMSWithSlopes_short_slope_thresh_{model_id}'
+          ]
+
 
 
 def lms_with_slopes_indicator_func(  long_minus_short, long_slope, short_slope            # input names
@@ -126,6 +150,36 @@ def extract_metrics_from_result(portfolios) -> pd.DataFrame:
     }
 
     stats_df = pd.concat(list(metrics_dict.values()), axis=1, keys=list(metrics_dict.keys()))
+  
+  return stats_df
+
+
+
+# The single version - there's gotta be an easier way to combine multiple vs single in one function instead of two
+def extract_metrics_from_single_result(combination: List[Thresholds], portfolio) -> Optional[pd.DataFrame]:
+  stats_df              = None
+  min_num_trade_filter  = portfolio.trades.count() > MINIMUM_NUM_TRADES    
+
+  if min_num_trade_filter:    
+    threshold_dicts = [map_thresholds_to_dict(threshold) for threshold in combination]
+    merged_thresholds = {k: v for d in threshold_dicts for k, v in d.items()}
+
+    metrics_dict = {
+      'total_return'    : [portfolio.total_return                    ],
+      'win_rate'        : [portfolio.trades.win_rate                 ],
+      'sharpe_ratio'    : [portfolio.sharpe_ratio                    ],
+      'sortino_ratio'   : [portfolio.sortino_ratio                   ],
+      'max_drawdown'    : [portfolio.max_drawdown                    ],
+      'profit_factor'   : [portfolio.trades.profit_factor            ],
+      'long_count'      : [portfolio.trades.direction_long.count()   ],
+      'short_count'     : [portfolio.trades.direction_short.count()  ],
+      'long_pnl_sum'    : [portfolio.trades.direction_long.pnl.sum() ],
+      'short_pnl_sum'   : [portfolio.trades.direction_short.pnl.sum()]
+    }
+
+    merged_dict = {**merged_thresholds, **metrics_dict}
+
+    stats_df = pd.DataFrame(merged_dict)
   
   return stats_df
 
