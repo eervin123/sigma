@@ -95,6 +95,16 @@ def calculate_entries_using_majority_rule(df: pd.DataFrame, thresholds: List[Thr
 
 
 
+def select_top_n_combinations_from_one_backtest(df: pd.DataFrame, n: int) -> pd.DataFrame:
+    df["combined_weight"]         = df["total_return"] * df["win_rate"] * df["sharpe_ratio"] * df["sortino_ratio"] * (1 + df["max_drawdown"]) * df["profit_factor"]
+    df["long_short_count"]        = df["long_count"] + df["short_count"]
+    df["long_vs_short_diff_pct"]  = abs((df["long_count"] / df["long_short_count"]) - (df["short_count"] / df["long_short_count"]))
+
+    filtered_df = df[(df["long_vs_short_diff_pct"] < 0.5)].nlargest(n, "combined_weight")
+
+    return filtered_df
+
+
 
 class MajorityMultiModelBacktest(MultiModelBacktest):
   def _run_backtest(self, merged_df: pd.DataFrame) -> pd.DataFrame:
@@ -116,19 +126,9 @@ class MajorityMultiModelBacktest(MultiModelBacktest):
 
 
   def _select_top_performing_combinations(self, full_results: Dict[str, pd.DataFrame], n: int) -> Dict[str, pd.DataFrame]:
-    return {key: self._select_top_n_combinations_from_one_backtest(value, n) for key, value in full_results.items()}
-  
+    return {key: select_top_n_combinations_from_one_backtest(value, n) for key, value in full_results.items()}
+    
 
-
-  def _select_top_n_combinations_from_one_backtest(self, df: pd.DataFrame, n: int) -> pd.DataFrame:
-    df["combined_weight"]         = df["total_return"] * df["win_rate"] * df["sharpe_ratio"] * df["sortino_ratio"] * (1 + df["max_drawdown"]) * df["profit_factor"]
-    df["long_short_count"]        = df["long_count"] + df["short_count"]
-    df["long_vs_short_diff_pct"]  = abs((df["long_count"] / df["long_short_count"]) - (df["short_count"] / df["long_short_count"]))
-
-    filtered_df = df[(df["long_vs_short_diff_pct"] < 0.5)].nlargest(n, "combined_weight")
-
-    return filtered_df
-  
 
 
   def _extract_thresholds_from_models(self, data: Dict[str, pd.DataFrame]) -> Dict[str, List[Thresholds]]:

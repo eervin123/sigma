@@ -1,5 +1,6 @@
 import re
 import os
+import glob
 from typing import List, Set, Tuple
 
 
@@ -51,6 +52,14 @@ def extract_run_ids(group: List[str]) -> List[str]:
 
 
 
+def extract_model_name_from_csv_for_excel_output_file_path(file_path: str) -> str:
+  name, _ = extract_file_name_and_extension(file_path)
+  name = name.replace(RESULT_CSV_SUFFIX, "")
+
+  return name
+
+
+
 
 def generate_excel_output_file_path(model_name: str, output_dir: str = OUTPUT_DIR) -> str:
   return output_dir + f"/{model_name + '.xlsx'}"
@@ -81,6 +90,10 @@ def generate_multiple_models_backtest_output_file_name_no_ext(group: List[str], 
 
 
 
+def generate_aggregated_top_N_output_file_path(n: int, output_dir: str = OUTPUT_DIR) -> str:
+  return output_dir + f"/aggregated_results_top{n}" + '.csv'
+
+
   
 def get_data_frame_file_path(model_name: str) -> str:
   relative_path = f"{OUTPUT_DIR}/{model_name}" + '.csv'
@@ -93,3 +106,20 @@ def get_results_file_path(model_name: str) -> str:
   relative_path = f"{OUTPUT_DIR}/{model_name + RESULT_CSV_SUFFIX }" + '.csv'
 
   return os.path.abspath(relative_path)
+
+
+
+def get_default_results_dir_absolute_path() -> str:
+  return os.path.abspath(OUTPUT_DIR)
+
+
+
+def get_all_result_csv_full_file_paths(path: str = get_default_results_dir_absolute_path()) -> List[str]:
+  all_csv_files   = glob.glob(os.path.join(path, "*.csv"))
+  filtered_files  = [file_name for file_name in all_csv_files if RESULT_CSV_SUFFIX in file_name]
+
+  filtered_files.sort()
+
+  return filtered_files
+
+
