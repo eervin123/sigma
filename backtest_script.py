@@ -4,11 +4,13 @@ import time
 import pandas as pd
 from backtesting import Strategy, Backtest
 
-CHUNK_SIZE          = 5000000         # The price file will be very large - so we will process it in chunks
-DEFAULT_PRICE_FILE  = "secbtcusdtm_20192020.csv"
-DEFAULT_TRADE_FILE  = "signal - yosemite btc - slow.csv"
-DATA_DIR            = "data"  
-RESULTS_DIR         = "results"     
+DEFAULT_CHUNK_SIZE    = 5000000         # The price file will be very large - so we will process it in chunks
+NO_CHUNK_SIZE_VALUE   = -1              # Use this value to process the entire file in one chunk
+NO_CHUNK_INDEX_VALUE  = "NoChunk"
+DEFAULT_PRICE_FILE    = "secbtcusdtm_20192020.csv"
+DEFAULT_TRADE_FILE    = "signal - yosemite btc - slow.csv"
+DATA_DIR              = "data"  
+RESULTS_DIR           = "results"     
 
 class pos_manager(Strategy):
     
@@ -163,19 +165,28 @@ def _output_to_files(stat: pd.DataFrame, file_prefix: str):
 
 
 
-def _process_backtest(price_file: str, trade_file: str):
+def _process_one_chunk(chunk_df: pd.DataFrame, price_file: str, trade_file: str, chunk_index_as_str: str, df_trades: pd.DataFrame):
+  start_time  = time.time()
+  chunk_df    = _convert_chunk_df_to_correct_format(chunk_df, _extract_file_name_no_ext(price_file))
+  stat        = _process_backtest_chunk(chunk_df, df_trades.copy())
+  file_prefix = _generate_output_file_prefix(price_file, trade_file, chunk_index_as_str)
+  _output_to_files(stat, file_prefix)
+  end_time    = time.time()
+  print(f'      Processed chunk {chunk_index_as_str} in {end_time - start_time} seconds.')
+
+
+
+
+def _process_backtest(price_file: str, trade_file: str, chunk_size: int):
   print(f'Processing backtest using price file "{price_file}" and trade file "{trade_file}"...')
   df_trades = _read_trade_file(trade_file)
 
-  for chunk_index, chunk_df in enumerate(pd.read_csv(price_file, chunksize=CHUNK_SIZE)):
-    start_time  = time.time()
-    chunk_df    = _convert_chunk_df_to_correct_format(chunk_df, _extract_file_name_no_ext(price_file))
-    stat        = _process_backtest_chunk(chunk_df, df_trades.copy())
-    file_prefix = _generate_output_file_prefix(price_file, trade_file, chunk_index)
-    _output_to_files(stat, file_prefix)
-    end_time    = time.time()
-    print(f'      Processed chunk {chunk_index} in {end_time - start_time} seconds.')
-
+  if chunk_size == NO_CHUNK_SIZE_VALUE:
+    chunk_df = pd.read_csv(price_file)
+    _process_one_chunk(chunk_df, price_file, trade_file, NO_CHUNK_INDEX_VALUE, df_trades) 
+  else:
+    for chunk_index, chunk_df in enumerate(pd.read_csv(price_file, chunksize=chunk_size)):
+      _process_one_chunk(chunk_df, price_file, trade_file, str(chunk_index), df_trades)    
   
   print("Done processing backtest.")
 
@@ -185,9 +196,10 @@ if __name__ == '__main__':
   parser = argparse.ArgumentParser(description="Process price and trade files.")
   parser.add_argument("--price_file", default=DEFAULT_PRICE_FILE, help=f"Path to price file (default: {DEFAULT_PRICE_FILE})")
   parser.add_argument("--trade_file", default=DEFAULT_TRADE_FILE, help=f"Path to trade file (default: {DEFAULT_TRADE_FILE})")
+  parser.add_argument("--chunk_size", default=DEFAULT_CHUNK_SIZE, help=f"Chunk size (default: {DEFAULT_CHUNK_SIZE}, use -1 to process entire file)")
   args = parser.parse_args()
 
   price_file_path = os.path.join(os.getcwd(), DATA_DIR, args.price_file)
   trade_file_path = os.path.join(os.getcwd(), DATA_DIR, args.trade_file)
 
-  _process_backtest(price_file_path, trade_file_path)
+  _process_backtest(price_file_path, trade_file_path, int(args.chunk_size))
