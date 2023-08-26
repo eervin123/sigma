@@ -170,13 +170,13 @@ def _process_backtest(price_file: str, trade_file: str):
 
 
 
-if __name__ == '__main__':
-  DEFAULT_PRICE_FILE_PATH = os.path.join(os.getcwd(), DATA_DIR, DEFAULT_PRICE_FILE)
-  DEFAULT_TRADE_FILE_PATH = os.path.join(os.getcwd(), DATA_DIR, DEFAULT_TRADE_FILE)
-
+if __name__ == '__main__':  
   parser = argparse.ArgumentParser(description="Process price and trade files.")
-  parser.add_argument("--price_file", default=DEFAULT_PRICE_FILE_PATH, help=f"Path to price file (default: {DEFAULT_PRICE_FILE_PATH})")
-  parser.add_argument("--trade_file", default=DEFAULT_TRADE_FILE_PATH, help=f"Path to trade file (default: {DEFAULT_TRADE_FILE_PATH})")
+  parser.add_argument("--price_file", default=DEFAULT_PRICE_FILE, help=f"Path to price file (default: {DEFAULT_PRICE_FILE})")
+  parser.add_argument("--trade_file", default=DEFAULT_TRADE_FILE, help=f"Path to trade file (default: {DEFAULT_TRADE_FILE})")
   args = parser.parse_args()
 
-  _process_backtest(args.price_file, args.trade_file)
+  price_file_path = os.path.join(os.getcwd(), DATA_DIR, args.price_file)
+  trade_file_path = os.path.join(os.getcwd(), DATA_DIR, args.trade_file)
+
+  _process_backtest(price_file_path, trade_file_path)
