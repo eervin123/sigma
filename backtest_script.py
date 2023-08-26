@@ -95,8 +95,9 @@ def _convert_chunk_df_to_correct_format(chunk_df: pd.DataFrame, price_file_name:
   else:
     chunk_df = chunk_df.rename(columns={  'Number of trades'      : 'Trade count'
                                        })
-    chunk_df.index = chunk_df['Open time']
+    chunk_df.index = pd.to_datetime(chunk_df['Open time'])
     chunk_df = chunk_df.drop(columns=['Open time', 'Close time'])
+    chunk_df['datetime'] = chunk_df.index        
 
   return chunk_df
 
