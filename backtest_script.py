@@ -1,5 +1,6 @@
 import os
 import argparse
+import time
 import pandas as pd
 from backtesting import Strategy, Backtest
 
@@ -75,21 +76,27 @@ def _read_trade_file(file_path: str) -> pd.DataFrame:
 
 
 
-def _convert_chunk_df_to_correct_format(chunk_df: pd.DataFrame) -> pd.DataFrame:
-  chunk_df = chunk_df.rename(columns={  'open_time'             : 'Open time'
-                                      , 'open'                  : 'Open'
-                                      , 'high'                  : 'High'
-                                      , 'low'                   : 'Low'
-                                      , 'close'                 : 'Close'
-                                      , 'volume'                : 'Volume'
-                                      , 'quote_volume'          : 'Quote volume'
-                                      , 'count'                 : 'Trade count'
-                                      , 'taker_buy_volume'      : 'Taker base volume'
-                                      , 'taker_buy_quote_volume': 'Taker quote volume'})
-  
-  chunk_df.index = pd.to_datetime(chunk_df['Open time'], unit='ms', utc=True)
-  chunk_df = chunk_df.drop(columns=['ignore', 'close_time', 'Open time'])
-  chunk_df['datetime'] = chunk_df.index
+def _convert_chunk_df_to_correct_format(chunk_df: pd.DataFrame, price_file_name: str) -> pd.DataFrame:
+  if price_file_name == "secbtcusdtm_20192020":
+    chunk_df = chunk_df.rename(columns={  'open_time'             : 'Open time'
+                                        , 'open'                  : 'Open'
+                                        , 'high'                  : 'High'
+                                        , 'low'                   : 'Low'
+                                        , 'close'                 : 'Close'
+                                        , 'volume'                : 'Volume'
+                                        , 'quote_volume'          : 'Quote volume'
+                                        , 'count'                 : 'Trade count'
+                                        , 'taker_buy_volume'      : 'Taker base volume'
+                                        , 'taker_buy_quote_volume': 'Taker quote volume'})
+    
+    chunk_df.index = pd.to_datetime(chunk_df['Open time'], unit='ms', utc=True)
+    chunk_df = chunk_df.drop(columns=['ignore', 'close_time', 'Open time'])
+    chunk_df['datetime'] = chunk_df.index
+  else:
+    chunk_df = chunk_df.rename(columns={  'Number of trades'      : 'Trade count'
+                                       })
+    chunk_df.index = chunk_df['Open time']
+    chunk_df = chunk_df.drop(columns=['Open time', 'Close time'])
 
   return chunk_df
 
@@ -160,10 +167,13 @@ def _process_backtest(price_file: str, trade_file: str):
   df_trades = _read_trade_file(trade_file)
 
   for chunk_index, chunk_df in enumerate(pd.read_csv(price_file, chunksize=CHUNK_SIZE)):
-    chunk_df    = _convert_chunk_df_to_correct_format(chunk_df)
+    start_time  = time.time()
+    chunk_df    = _convert_chunk_df_to_correct_format(chunk_df, _extract_file_name_no_ext(price_file))
     stat        = _process_backtest_chunk(chunk_df, df_trades.copy())
     file_prefix = _generate_output_file_prefix(price_file, trade_file, chunk_index)
     _output_to_files(stat, file_prefix)
+    end_time    = time.time()
+    print(f'      Processed chunk {chunk_index} in {end_time - start_time} seconds.')
 
   
   print("Done processing backtest.")
