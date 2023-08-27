@@ -160,7 +160,7 @@ def _output_to_files(stat: pd.DataFrame, file_prefix: str):
 
   equity_curve_stat = stat['_equity_curve']
   
-  equity =  equity_curve_stat.resample('1D').last()  
+  equity = equity_curve_stat # equity_curve_stat.resample('1D').last()  
   equity_csv_file_name = _generate_output_file_name(file_prefix, 'equity')
   equity.to_csv(equity_csv_file_name)
 
