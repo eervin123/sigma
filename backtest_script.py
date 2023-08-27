@@ -12,6 +12,8 @@ DEFAULT_TRADE_FILE    = "signal - yosemite btc - slow.csv"
 DATA_DIR              = "data"  
 RESULTS_DIR           = "results"     
 
+NUM_PRICES_PER_HOUR   = 60 * 60         # When using minute data, it should be 60.  Seconds data should be 60 x 60
+
 class pos_manager(Strategy):
     
     def init(self):
@@ -52,7 +54,7 @@ class pos_manager(Strategy):
             elif self.position.pl_pct < -0.05:
                 self.position.close()
                    
-            elif trades_len and self.trades[-1].pl_pct < -0.0040 and bars_since_prev_trade > 60 and trades_len < 5:
+            elif trades_len and self.trades[-1].pl_pct < -0.0040 and bars_since_prev_trade > NUM_PRICES_PER_HOUR and trades_len < 5:
                 self.buy(size=0.2)
 
         elif self.position.size < 0:
@@ -62,7 +64,7 @@ class pos_manager(Strategy):
             elif self.position.pl_pct < -0.00 and (self.signal[-1] == 1 or self.signal[-1] ==2):
                 self.position.close()
 
-            elif trades_len and self.trades[-1].pl_pct < -0.0040 and bars_since_prev_trade > 60 and trades_len < 5:
+            elif trades_len and self.trades[-1].pl_pct < -0.0040 and bars_since_prev_trade > NUM_PRICES_PER_HOUR and trades_len < 5:
                 self.sell(size=0.2)
 
 
