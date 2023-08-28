@@ -1,7 +1,9 @@
+from enum import Enum
 import os
 import argparse
 import time
 import pandas as pd
+from collections import defaultdict
 from backtesting import Strategy, Backtest
 
 DEFAULT_CHUNK_SIZE    = 5000000         # The price file will be very large - so we will process it in chunks
@@ -13,10 +15,31 @@ RESULTS_DIR           = "results"
 BTC_PRICE_FILE_PART1  = "secbtcusdtm_20192020.csv"
 BTC_PRICE_FILE_PART2  = "btcsec2021-23.csv"
 ALL_BTC_PRICE_FILES   = "all_btc_prices"
+ETH_PRICE_FILE        = "ETHUSDT-1s-201909-202308.csv"
 DEFAULT_PRICE_FILE    = BTC_PRICE_FILE_PART1
 DEFAULT_TRADE_FILE    = "signal - yosemite btc - slow.csv"
 
 NUM_PRICES_PER_HOUR   = 60 * 60         # When using minute data, it should be 60.  Seconds data should be 60 x 60
+
+# The price files currently come in 2 different formats...
+class PriceFileFormatType(Enum):
+  FORMAT_TYPE_1 = 1
+  FORMAT_TYPE_2 = 2
+
+
+
+def _extract_file_name_no_ext(absolute_path: str) -> str:
+  return os.path.splitext(os.path.basename(absolute_path))[0]
+
+
+
+PRICE_FILE_TO_FORMAT_TYPE_DICT = defaultdict(lambda: PriceFileFormatType.FORMAT_TYPE_1)
+PRICE_FILE_TO_FORMAT_TYPE_DICT[ _extract_file_name_no_ext(BTC_PRICE_FILE_PART1)        ] = PriceFileFormatType.FORMAT_TYPE_1
+PRICE_FILE_TO_FORMAT_TYPE_DICT[ _extract_file_name_no_ext(BTC_PRICE_FILE_PART2)        ] = PriceFileFormatType.FORMAT_TYPE_2
+# ALL_BTC_PRICE_FILES is a hybrid, so it doesn't have its own entry
+PRICE_FILE_TO_FORMAT_TYPE_DICT[ _extract_file_name_no_ext(ETH_PRICE_FILE      )        ] = PriceFileFormatType.FORMAT_TYPE_1
+
+
 
 class pos_manager(Strategy):
     
@@ -85,7 +108,7 @@ def _read_trade_file(file_path: str) -> pd.DataFrame:
 
 
 def _convert_chunk_df_to_correct_format(chunk_df: pd.DataFrame, price_file_name: str) -> pd.DataFrame:
-  if price_file_name == "secbtcusdtm_20192020":
+  if PRICE_FILE_TO_FORMAT_TYPE_DICT[price_file_name] == PriceFileFormatType.FORMAT_TYPE_1:
     chunk_df = chunk_df.rename(columns={  'open_time'             : 'Open time'
                                         , 'open'                  : 'Open'
                                         , 'high'                  : 'High'
@@ -126,7 +149,7 @@ def _process_backtest_chunk(df_prices: pd.DataFrame, df_trades: pd.DataFrame):
                 , pos_manager
                 , cash              = 100_000_000
                 , trade_on_close    = True
-                , commission        = .0004
+                , commission        = .0014
                 , exclusive_orders  = False
                 , margin            = 0.25, # Set this to 0.5 for 2x leverage, 0.25 for 4x leverage, 0.125 for 8x leverage, etc.
               )
@@ -135,9 +158,6 @@ def _process_backtest_chunk(df_prices: pd.DataFrame, df_trades: pd.DataFrame):
   return stat
 
 
-
-def _extract_file_name_no_ext(absolute_path: str) -> str:
-  return os.path.splitext(os.path.basename(absolute_path))[0]
 
 
 
